@@ -467,3 +467,38 @@ sub import_imap_folder
 }
 
 1;
+
+=head1 NAME
+
+Yandex::API::PDD - Perl extension for Yandex mail hosting
+
+=head1 SYNOPSIS
+
+    use Yandex::API::PDD;
+    blah blah blah
+
+    TBD
+
+=head1 DESCRIPTION
+
+    TBD
+    
+    Blah blah blah.
+
+=head1 SEE ALSO
+
+    http://pdd.yandex.ru/
+
+=head1 AUTHOR
+
+    dctabuyz@ya.ru
+
+=head1 COPYRIGHT AND LICENSE
+
+    Copyright (C) 2010 by dctabuyz@ya.ru
+    
+    This library is free software; you can redistribute it and/or modify
+    it under the same terms as Perl itself, either Perl version 5.8.7 or,
+    at your option, any later version of Perl 5 you may have available.
+
+=cut
