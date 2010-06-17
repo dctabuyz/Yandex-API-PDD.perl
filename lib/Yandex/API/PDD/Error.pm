@@ -8,7 +8,6 @@ use base "Exporter";
 use constant HTTP_ERROR          => 'HTTP_ERROR';
 
 use constant NOT_AUTHENTICATED   => 'NOT_AUTHENTICATED';
-use constant EMPTY_RESPONSE      => 'EMPTY_RESPONSE';
 use constant INVALID_RESPONSE    => 'INVALID_RESPONSE';
 use constant REQUEST_FAILED      => 'REQUEST_FAILED';
 
@@ -34,7 +33,6 @@ my @ERR = qw(
 		HTTP_ERROR
 
 		NOT_AUTHENTICATED
-		EMPTY_RESPONSE
 		INVALID_RESPONSE
 		REQUEST_FAILED
                                                   
