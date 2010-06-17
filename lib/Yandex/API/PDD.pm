@@ -8,6 +8,8 @@ use LWP::ConnCache;
 use XML::LibXML;
 use XML::LibXML::XPathContext; # explicit use is required in some cases
 
+use Yandex::API::PDD::Error;
+
 use constant API_URL => 'https://pddimp.yandex.ru/';
 
 sub new
@@ -29,11 +31,12 @@ sub __init
 	my $self = shift;
 	my $data = shift;
 
-	return undef unless ($data);
+	return undef unless $data;
+	return undef unless $data -> {token};
 
-	$self -> {token} = $data -> {token};
+	$self -> {token}  = $data -> {token};
 
-	return undef unless $self -> {token};
+	$ENV{HTTPS_CA_FILE} = $data -> {cert_file} if ($data -> {cert_file});
 
 	$self -> {ua} = new LWP::UserAgent;
 	$self -> {ua} -> conn_cache(new LWP::ConnCache);
@@ -88,7 +91,18 @@ sub __handle_http_error
 	);
 }
 
-sub __get_xpath_nodes
+sub __unknown_error
+{
+	my $self = shift;
+
+	$self -> __set_error( &Yandex::API::PDD::Error::UNKNOWN_ERROR,
+			      $self -> {r} -> decoded_content()
+	);
+
+	return undef;
+}
+
+sub __get_nodelist
 {
 	my $self  = shift;
 	my $xpath = shift;
@@ -99,7 +113,7 @@ sub __get_xpath_nodes
 	return $self -> {xpath} -> findnodes($xpath, $xml);
 }
 
-sub __get_xpath_data
+sub __get_node_text
 {
 	my $self  = shift;
 	my $xpath = shift;
@@ -129,19 +143,19 @@ sub __parse_response
 
 	unless ($xml)
 	{
-		$self -> __set_error(&Yandex::API::PDD::Error::EMPTY_RESPONSE);
+		$self -> __set_error(&Yandex::API::PDD::Error::INVALID_RESPONSE);
 		return undef;
 	}
 
 	$self -> {xml} = $xml;
 
-	if ( $self -> {_error} = $self -> __get_xpath_data('/page/error/@reason') )
+	if ( $self -> {_error} = $self -> __get_node_text('/page/error/@reason') )
 	{
 		$self -> __handle_error();
 		return undef;
 	}
 
-	if ( $self -> __get_xpath_data('/page/xscript_invoke_failed/@error') )
+	if ( $self -> __get_node_text('/page/xscript_invoke_failed/@error') )
 	{
 		my $info = '';
 
@@ -149,7 +163,7 @@ sub __parse_response
 		{
 			my $s = '/page/xscript_invoke_failed/@' . $_;
 
-			$info .= $_ . ': "' . $self -> __get_xpath_data($s) . '" ';
+			$info .= $_ . ': "' . $self -> __get_node_text($s) . '" ';
 		}
 
 		$self -> __set_error(&Yandex::API::PDD::Error::SERVICE_ERROR, $info);
@@ -162,11 +176,11 @@ sub __parse_response
 sub __make_request
 {
 	my $self = shift;
-	my $uri  = shift;
+	my $url  = shift;
 
 	$self -> __reset_error();
 
-	$self -> {r} = $self -> {ua} -> get($uri);
+	$self -> {r} = $self -> {ua} -> get($url);
 
 	unless ($self -> {r} -> is_success)
 	{
@@ -182,14 +196,17 @@ sub is_user_exists
 	my $self  = shift;
 	my $login = shift;
 
-# TODO set error if login is empty
-	return undef unless ($login);
+	my $url = API_URL . 'check_user.xml?token=' . $self -> {token} . '&login=' . $login;
 
-	my $uri = API_URL . 'check_user.xml?token=' . $self -> {token} . '&login=' . $login;
+	return undef unless $self -> __make_request($url);
 
-	return undef unless $self -> __make_request($uri);
+	if ( my $result = $self -> __get_node_text('/page/result/text()') )
+	{
+		return 1 if ( 'exists' eq $result );
+		return 0 if ( 'nouser' eq $result );
+	}
 
-	return ( 'exists' eq $self -> __get_xpath_data('/page/result/text()') );
+	return $self -> __unknown_error();
 }
 
 sub create_user
@@ -199,25 +216,27 @@ sub create_user
 	my $pass  = shift;
 	my $encr  = shift;
 
-# TODO set error if login is empty
-#	return undef unless ($login and $pass);
-
-	my $uri;
+	my $url;
 
 	if ($encr)
 	{
-		$uri = API_URL . 'reg_user_crypto.xml?token=' . $self -> {token} . '&login='    . $login
+		$url = API_URL . 'reg_user_crypto.xml?token=' . $self -> {token} . '&login='    . $login
 										 . '&password=' . $pass;
 	}
 	else
 	{
-		$uri = API_URL . 'reg_user_token.xml?token=' . $self -> {token} . '&u_login='    . $login
+		$url = API_URL . 'reg_user_token.xml?token=' . $self -> {token} . '&u_login='    . $login
 										. '&u_password=' . $pass;
 	}
 
-	return undef unless $self -> __make_request($uri);
+	return undef unless $self -> __make_request($url);
 
-	return ( $self -> __get_xpath_data('/page/ok/@uid') );
+	if ( my $uid = $self -> __get_node_text('/page/ok/@uid') )
+	{
+		return $uid;
+	}
+
+	return $self -> __unknown_error();
 }
 
 sub create_user_encryped
@@ -232,11 +251,10 @@ sub create_user_encryped
 sub update_user
 {
 	my $self  = shift;
+	my $login = shift;
 	my %data  = @_;
 
-# TODO set error if login is empty
-
-	my $uri = API_URL . '/edit_user.xml?token=' . $self -> {token}  . '&login='    . $data{login}
+	my $url = API_URL . '/edit_user.xml?token=' . $self -> {token}  . '&login='    . $login
 									. '&password=' . $data{password} || ''
 									. '&iname='    . $data{iname}    || ''
 									. '&fname='    . $data{fname}    || ''
@@ -245,27 +263,41 @@ sub update_user
 									. '&hinta='    . $data{hinta}    || '';
 
 
-	return undef unless $self -> __make_request($uri);
+	return undef unless $self -> __make_request($url);
 
-	return ( $self -> __get_xpath_data('/page/ok/@uid') );
+	if ( my $uid = $self -> __get_node_text('/page/ok/@uid') )
+	{
+		return $uid;
+	}
+
+	return $self -> __unknown_error();
 }
 
 sub import_user
 {
-	my $self = shift;
-	my %data = @_;
+	my $self     = shift;
+	my $login    = shift;
+	my $password = shift;
+	my %data     = @_;
 
-	my $uri = API_URL . 'reg_and_imp.xml?token='    . $self -> {token}
-							. '&login='        . $data{login}
-							. '&ext_login='    . ( $data{ext_login} || $data{login} )
-							. '&inn_password=' . $data{int_password}
-							. '&ext_password=' . $data{ext_password}
-							. '&fwd_email='    . ( $data{fwd_email} || '' )
-							. '&fwd_copy='     . ( $data{fwd_copy} ? '1' : '0' );
+	$data{save_copy} = ($data{save_copy} and $data{save_copy} ne 'no') ? '1' : '0';
 
-	return undef unless $self -> __make_request($uri);
+	my $url = API_URL . 'reg_and_imp.xml?token='    . $self -> {token}
+							. '&login='        . $login
+							. '&inn_password=' . $password
+							. '&ext_login='    . ( $data{ext_login} || $login )
+							. '&ext_password=' .   $data{ext_password}
+							. '&fwd_email='    . ( $data{forward_to} || '' )
+							. '&fwd_copy='     .   $data{save_copy};
 
-	return 1;
+	return undef unless $self -> __make_request($url);
+
+	if ( $self -> __get_nodelist('/page/ok') -> [0] )
+	{
+		return 1;
+	}
+
+	return $self -> __unknown_error();
 }
 
 sub delete_user
@@ -273,33 +305,39 @@ sub delete_user
 	my $self  = shift;
 	my $login = shift;
 
-	return undef unless ($login);
+	my $url = API_URL . 'delete_user.xml?token=' . $self -> {token}  . '&login=' . $login;
 
-	my $uri = API_URL . 'delete_user.xml?token=' . $self -> {token}  . '&login=' . $login;
+	return undef unless $self -> __make_request($url);
 
-	return undef unless $self -> __make_request($uri);
+	if ( $self -> __get_nodelist('/page/ok') -> [0] )
+	{
+		return 1;
+	}
 
-	return 1;
+	return $self -> __unknown_error();
 }
 
 sub set_forward
 {
-	my $self    = shift;
-	my $login   = shift;
-	my $address = shift;
+	my $self      = shift;
+	my $login     = shift;
+	my $address   = shift;
+	my $save_copy = shift;
+	
+	$save_copy = ($save_copy and $save_copy ne 'no') ? 'yes' : 'no';
 
-	my $copy    = (shift) ? 'yes' : 'no';
-
-# TODO set error if login is empty
-#	return undef unless ($login and $address);
-
-	my $uri = API_URL . 'set_forward.xml?token=' . $self -> {token} . '&login='   . $login
+	my $url = API_URL . 'set_forward.xml?token=' . $self -> {token} . '&login='   . $login
 									. '&address=' . $address
-									. '&copy='    . $copy;
+									. '&copy='    . $save_copy;
 
-	return undef unless $self -> __make_request($uri);
+	return undef unless $self -> __make_request($url);
 
-	return 1;
+	if ( $self -> __get_nodelist('/page/ok') -> [0] )
+	{
+		return 1;
+	}
+
+	return $self -> __unknown_error();
 }
 
 sub get_user
@@ -307,28 +345,25 @@ sub get_user
 	my $self    = shift;
 	my $login   = shift;
 
-# TODO set error if login is empty
-	return undef unless ($login);
+	my $url = API_URL . 'get_user_info.xml?token=' . $self -> {token} . '&login=' . $login;
 
-	my $uri = API_URL . 'get_user_info.xml?token=' . $self -> {token} . '&login=' . $login;
-
-	return undef unless $self -> __make_request($uri);
+	return undef unless $self -> __make_request($url);
 
 	my %user =
 	(
-		domain      => $self -> __get_xpath_data('/page/domain/name/text()'),
-		login       => $self -> __get_xpath_data('/page/domain/user/login/text()'),
-		birth_date  => $self -> __get_xpath_data('/page/domain/user/birth_date/text()'),
-		fname       => $self -> __get_xpath_data('/page/domain/user/fname/text()'),
-		iname       => $self -> __get_xpath_data('/page/domain/user/iname/text()'),
-		hinta       => $self -> __get_xpath_data('/page/domain/user/hinta/text()'),
-		hintq       => $self -> __get_xpath_data('/page/domain/user/hintq/text()'),
-		mail_format => $self -> __get_xpath_data('/page/domain/user/mail_format/text()'),
-		charset     => $self -> __get_xpath_data('/page/domain/user/charset/text()'),
-		nickname    => $self -> __get_xpath_data('/page/domain/user/nickname/text()'),
-		sex         => $self -> __get_xpath_data('/page/domain/user/sex/text()'),
-		enabled     => $self -> __get_xpath_data('/page/domain/user/enabled/text()'),
-		signed_eula => $self -> __get_xpath_data('/page/domain/user/signed_eula/text()'),
+		domain      => $self -> __get_node_text('/page/domain/name/text()'),
+		login       => $self -> __get_node_text('/page/domain/user/login/text()'),
+		birth_date  => $self -> __get_node_text('/page/domain/user/birth_date/text()'),
+		fname       => $self -> __get_node_text('/page/domain/user/fname/text()'),
+		iname       => $self -> __get_node_text('/page/domain/user/iname/text()'),
+		hinta       => $self -> __get_node_text('/page/domain/user/hinta/text()'),
+		hintq       => $self -> __get_node_text('/page/domain/user/hintq/text()'),
+		mail_format => $self -> __get_node_text('/page/domain/user/mail_format/text()'),
+		charset     => $self -> __get_node_text('/page/domain/user/charset/text()'),
+		nickname    => $self -> __get_node_text('/page/domain/user/nickname/text()'),
+		sex         => $self -> __get_node_text('/page/domain/user/sex/text()'),
+		enabled     => $self -> __get_node_text('/page/domain/user/enabled/text()'),
+		signed_eula => $self -> __get_node_text('/page/domain/user/signed_eula/text()'),
 	);
 
 	return \%user;
@@ -339,14 +374,18 @@ sub get_unread_count
 	my $self  = shift;
 	my $login = shift;
 
-# TODO set error if login is empty
-	return undef unless ($login);
+	my $url = API_URL . 'get_mail_info.xml?token=' . $self -> {token} . '&login=' . $login;
 
-	my $uri = API_URL . 'get_mail_info.xml?token=' . $self -> {token} . '&login=' . $login;
+	return undef unless $self -> __make_request($url);
 
-	return undef unless $self -> __make_request($uri);
+	my $count = $self -> __get_node_text('/page/ok/@new_messages');
 
-	return $self -> __get_xpath_data('/page/ok/@new_messages');
+	if ( defined $count )
+	{
+		return $count;
+	}
+
+	return $self -> __unknown_error();
 }
 
 sub get_user_list
@@ -355,62 +394,81 @@ sub get_user_list
 	my $page     = shift || 1;
 	my $per_page = shift || 100;
 
-	my $uri = API_URL . 'get_domain_users.xml?token=' . $self -> {token}
+	my $url = API_URL . 'get_domain_users.xml?token=' . $self -> {token}
 							  . '&page= '    . $page # HACK XXX
 							  . '&per_page=' . $per_page;
-	return undef unless $self -> __make_request($uri);
+	return undef unless $self -> __make_request($url);
 
 	my @emails = ();
 
-	for ( $self -> __get_xpath_nodes('/page/domains/domain/emails/email/name') )
+	for ( $self -> __get_nodelist('/page/domains/domain/emails/email/name') )
 	{
 		push( @emails, $_ -> textContent );
 	}
 
 	$self -> {info} =
 	{
-		'action-status'    =>  $self -> __get_xpath_data('/page/domains/domain/emails/action-status/text()'),
-		'found'            =>  $self -> __get_xpath_data('/page/domains/domain/emails/found/text()'),
-		'total'            =>  $self -> __get_xpath_data('/page/domains/domain/emails/total/text()'),
-		'domain'           =>  $self -> __get_xpath_data('/page/domains/domain/name/text()'),
-		'status'           =>  $self -> __get_xpath_data('/page/domains/domain/status/text()'),
-		'emails-max-count' =>  $self -> __get_xpath_data('/page/domains/domain/emails-max-count/text()'),
+		'action-status'    =>  $self -> __get_node_text('/page/domains/domain/emails/action-status/text()'),
+		'found'            =>  $self -> __get_node_text('/page/domains/domain/emails/found/text()'),
+		'total'            =>  $self -> __get_node_text('/page/domains/domain/emails/total/text()'),
+		'domain'           =>  $self -> __get_node_text('/page/domains/domain/name/text()'),
+		'status'           =>  $self -> __get_node_text('/page/domains/domain/status/text()'),
+		'emails-max-count' =>  $self -> __get_node_text('/page/domains/domain/emails-max-count/text()'),
 		'emails'           =>  \@emails,
 	};
 
-	return 1;
+	return $self -> {info};
 }
 
 sub prepare_import
 {
-	my $self = shift;
-	my %data = @_;
+	my $self   = shift;
+	my $server = shift;
+	my %data   = @_;
 
-	my $uri = API_URL . 'set_domain.xml?token='     . $self -> {token}
-							. '&method='    . ($data{method} || 'pop3')
-							. '&ext_serv='  .  $data{server}
-							. '&ext_port='  .  $data{port}
-							. '&isssl='     . ($data{use_ssl}  ? 'yes' : 'no')
-							. '&callback='  . ($data{callback} ? 'yes' : 'no');
+	unless ($data{method} or $data{method} !~ /^pop3|imap$/i)
+	{
+		$data{method} = 'pop3';
+	}
 
-	return undef unless $self -> __make_request($uri);
+	my $url = API_URL . 'set_domain.xml?token='     . $self -> {token}
+							. '&ext_serv='  .  $server
+							. '&method='    .  $data{method}
+							. '&callback='  .  $data{callback};
 
-	return 1;
+	$url .= '&ext_port=' . $data{port} if $data{port};
+
+	$url .= '&isssl=no' unless $data{use_ssl};
+
+	return undef unless $self -> __make_request($url);
+
+	if ( $self -> __get_nodelist('/page/ok') -> [0] )
+	{
+		return 1;
+	}
+
+	return $self -> __unknown_error();
 }
 
 sub start_import
 {
-	my $self = shift;
-	my %data = @_;
+	my $self  = shift;
+	my $login = shift;
+	my %data  = @_;
 
-	my $uri = API_URL . 'start_import.xml?token='   . $self -> {token}
-							. '&login='     . ($data{login}        || '')
-							. '&ext_login=' . ($data{ext_login}    || $data{login} || '')
-							. '&password='  . ($data{ext_password} || '');
+	my $url = API_URL . 'start_import.xml?token='   . $self -> {token}
+							. '&login='     .  $login
+							. '&ext_login=' . ($data{login} || $login)
+							. '&password='  .  $data{password};
 
-	return undef unless $self -> __make_request($uri);
+	return undef unless $self -> __make_request($url);
 
-	return 1;
+	if ( $self -> __get_nodelist('/page/ok') -> [0] )
+	{
+		return 1;
+	}
+
+	return $self -> __unknown_error();
 }
 
 sub get_import_status
@@ -418,18 +476,15 @@ sub get_import_status
 	my $self  = shift;
 	my $login = shift;
 
-# TODO set error if login is empty
-	return undef unless ($login);
+	my $url = API_URL . 'check_import.xml?token=' . $self -> {token}  . '&login=' . $login;
 
-	my $uri = API_URL . 'check_import.xml?token=' . $self -> {token}  . '&login=' . $login;
-
-	return undef unless $self -> __make_request($uri);
+	return undef unless $self -> __make_request($url);
 
 	my $data =
 	{
-		last_check => $self -> __get_xpath_data('/page/ok/@last_check'),
-		imported   => $self -> __get_xpath_data('/page/ok/@imported'),
-		state      => $self -> __get_xpath_data('/page/ok/@state'),
+		last_check => $self -> __get_node_text('/page/ok/@last_check'),
+		imported   => $self -> __get_node_text('/page/ok/@imported'),
+		state      => $self -> __get_node_text('/page/ok/@state'),
 	};
 
 	return $data;
@@ -442,35 +497,50 @@ sub stop_import
 
 	return undef unless ($login);
 
-	my $uri = API_URL . 'stop_import.xml?token=' . $self -> {token}  . '&login=' . $login;
+	my $url = API_URL . 'stop_import.xml?token=' . $self -> {token}  . '&login=' . $login;
 
-	return undef unless $self -> __make_request($uri);
+	return undef unless $self -> __make_request($url);
 
-	return 1;
+	if ( $self -> __get_nodelist('/page/ok') -> [0] )
+	{
+		return 1;
+	}
+
+	return $self -> __unknown_error();
 }
 
 # fails for existing accounts
-sub import_imap_folder
-{
-	my $self = shift;
-	my %data = @_;
-
-	my $uri = API_URL . 'import_imap.xml?token='    . $self -> {token}
-							. '&login='           . $data{login}
-							. '&ext_login='       . ( $data{ext_login} || $data{login} )
-							. '&int_password='    . ( $data{int_password} || '' )
-							. '&ext_password='    . $data{ext_password};
-
-	return undef unless $self -> __make_request($uri);
-
-	return 1;
-}
+#sub import_imap_folder
+#{
+#	my $self     = shift;
+#	my $login    = shift;
+#	my $password = shift;
+#
+#	my $ext_login    = shift;
+#	my $ext_password = shift;
+#
+#	my $url = API_URL . 'import_imap.xml?token='    . $self -> {token}
+#							. '&login='           . $login
+#							. '&ext_login='       . $ext_login
+#							. '&ext_password='    . $ext_password;
+#
+#	$url .= '&int_password=' . $password if ($password);
+#
+#	return undef unless $self -> __make_request($url);
+#
+#	if ( $self -> __get_nodelist('/page/ok') -> [0] )
+#	{
+#		return 1;
+#	}
+#
+#	return $self -> __unknown_error();
+#}
 
 1;
 
 =head1 NAME
 
-Yandex::API::PDD - Perl extension for Yandex mail hosting
+Yandex::API::PDD - Perl extension for Yandex mailhosting
 
 =head1 SYNOPSIS
 
