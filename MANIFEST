@@ -2,7 +2,7 @@ Changes
 Makefile.PL
 MANIFEST
 README
-t/Yandex-API-PDD.t
-lib/Yandex/API/PDD.pm
-lib/Yandex/API/PDD/Error.pm
+t/WWW-Yandex-PDD.t
+lib/WWW/Yandex/PDD.pm
+lib/WWW/Yandex/PDD/Error.pm
 

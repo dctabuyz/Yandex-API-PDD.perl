@@ -1,4 +1,4 @@
-package Yandex::API::PDD::Error;
+package WWW::Yandex::PDD::Error;
 
 use strict;
 use warnings;

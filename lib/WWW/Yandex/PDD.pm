@@ -1,4 +1,4 @@
-package Yandex::API::PDD;
+package WWW::Yandex::PDD;
 
 use strict;
 use warnings;
