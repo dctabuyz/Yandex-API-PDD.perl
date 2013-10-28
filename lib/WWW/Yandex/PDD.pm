@@ -8,7 +8,7 @@ use LWP::ConnCache;
 use XML::LibXML;
 use XML::LibXML::XPathContext; # explicit use is required in some cases
 
-use Yandex::API::PDD::Error;
+use WWW::Yandex::PDD::Error;
 
 use constant API_URL => 'https://pddimp.yandex.ru/';
 
