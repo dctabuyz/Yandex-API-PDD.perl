@@ -2,7 +2,9 @@ Changes
 Makefile.PL
 MANIFEST
 README
-t/WWW-Yandex-PDD.t
 lib/WWW/Yandex/PDD.pm
 lib/WWW/Yandex/PDD/Error.pm
-
+t/00-load.t
+t/manifest.t
+t/pod-coverage.t
+t/pod.t

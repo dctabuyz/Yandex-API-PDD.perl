@@ -536,39 +536,91 @@ sub stop_import
 #	return $self -> __unknown_error();
 #}
 
-1;
-
 =head1 NAME
 
-Yandex::API::PDD - Perl extension for Yandex mailhosting
+WWW::Yandex::PDD - Perl extension for Yandex mailhosting
+
+=head1 VERSION
+
+Version 0.02
+
+=cut
+
+our $VERSION = '0.02';
+
 
 =head1 SYNOPSIS
 
-    use Yandex::API::PDD;
-    blah blah blah
+use WWW::Yandex::PDD;
+blah blah blah
 
-    TBD
+TBD
+
 
 =head1 DESCRIPTION
 
-    TBD
-    
-    Blah blah blah.
+TBD
+
+Blah blah blah.
+
 
 =head1 SEE ALSO
 
-    http://pdd.yandex.ru/
+http://pdd.yandex.ru/
+
 
 =head1 AUTHOR
 
-    dctabuyz@ya.ru
+dctabuyz, C<< <dctabuyz@ya.ru> >>
+Andrei Lukovenko, C<< <aluck at cpan.org> >>
+
+
+=head1 BUGS
+
+Please report any bugs or feature requests to C<bug-www-yandex-pdd at rt.cpan.org>, or through
+the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=WWW-Yandex-PDD>.  I will be notified, and then you'll
+automatically be notified of progress on your bug as I make changes.
+
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc WWW::Yandex::PDD
+
+
+You can also look for information at:
+
+=over 4
+
+=item * RT: CPAN's request tracker (report bugs here)
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=WWW-Yandex-PDD>
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/WWW-Yandex-PDD>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/WWW-Yandex-PDD>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/WWW-Yandex-PDD/>
+
+=back
+
 
 =head1 COPYRIGHT AND LICENSE
 
-    Copyright (C) 2010 by dctabuyz@ya.ru
+    Copyright (c) 2010 by dctabuyz@ya.ru
+    Copyright (c) 2013 by aluck@cpan.org
     
     This library is free software; you can redistribute it and/or modify
     it under the same terms as Perl itself, either Perl version 5.8.7 or,
     at your option, any later version of Perl 5 you may have available.
 
 =cut
+
+1;
