@@ -3,6 +3,8 @@ package WWW::Yandex::PDD;
 use strict;
 use warnings;
 
+our $VERSION = '0.03';
+
 use LWP::UserAgent; # also required: Crypt::SSLeay or IO::Socket::SSL
 use LWP::ConnCache;
 use XML::LibXML;
@@ -540,15 +542,6 @@ sub stop_import
 
 WWW::Yandex::PDD - Perl extension for Yandex mailhosting
 
-=head1 VERSION
-
-Version 0.02
-
-=cut
-
-our $VERSION = '0.02';
-
-
 =head1 SYNOPSIS
 
 use WWW::Yandex::PDD;
@@ -616,7 +609,7 @@ L<http://search.cpan.org/dist/WWW-Yandex-PDD/>
 
     Copyright (c) 2010 by dctabuyz@ya.ru
     Copyright (c) 2013 by aluck@cpan.org
-    
+
     This library is free software; you can redistribute it and/or modify
     it under the same terms as Perl itself, either Perl version 5.8.7 or,
     at your option, any later version of Perl 5 you may have available.

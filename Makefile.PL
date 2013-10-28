@@ -5,7 +5,6 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
     NAME      => 'WWW::Yandex::PDD',
-    VERSION   => '0.0.2',
     PREREQ_PM => {
         'LWP::UserAgent' => 0, # any version will do
         'XML::LibXML'    => 0
