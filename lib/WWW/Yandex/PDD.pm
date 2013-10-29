@@ -3,7 +3,7 @@ package WWW::Yandex::PDD;
 use strict;
 use warnings;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 use LWP::UserAgent; # also required: Crypt::SSLeay or IO::Socket::SSL
 use LWP::ConnCache;
@@ -222,12 +222,12 @@ sub create_user
 
 	if ($encr)
 	{
-		$url = API_URL . 'reg_user_crypto.xml?token=' . $self -> {token} . '&login='    . $login
+		$url = API_URL . 'reg_user_crypto.xml?token=' . $self -> {token} . '&login=' . $login
 										 . '&password=' . $pass;
 	}
 	else
 	{
-		$url = API_URL . 'reg_user_token.xml?token=' . $self -> {token} . '&u_login='    . $login
+		$url = API_URL . 'reg_user_token.xml?token=' . $self -> {token} . '&u_login=' . $login
 										. '&u_password=' . $pass;
 	}
 
@@ -256,7 +256,7 @@ sub update_user
 	my $login = shift;
 	my %data  = @_;
 
-	my $url = API_URL . '/edit_user.xml?token=' . $self -> {token}  . '&login='    . $login
+	my $url = API_URL . '/edit_user.xml?token=' . $self -> {token} . '&login=' . $login
 									. '&password=' . $data{password} || ''
 									. '&iname='    . $data{iname}    || ''
 									. '&fname='    . $data{fname}    || ''
@@ -542,37 +542,40 @@ sub stop_import
 
 WWW::Yandex::PDD - Perl extension for Yandex mailhosting
 
+
 =head1 SYNOPSIS
 
-use WWW::Yandex::PDD;
-blah blah blah
+	use WWW::Yandex::PDD;
 
-TBD
+TODO:
 
 
 =head1 DESCRIPTION
 
-TBD
-
-Blah blah blah.
+TODO:
 
 
 =head1 SEE ALSO
 
 http://pdd.yandex.ru/
+http://api.yandex.ru/pdd/doc/api-pdd/concepts/general.xml
 
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-dctabuyz, C<< <dctabuyz@ya.ru> >>
+dctabuyz, C<< <dctabuyz at ya.ru> >>
 Andrei Lukovenko, C<< <aluck at cpan.org> >>
 
 
 =head1 BUGS
 
 Please report any bugs or feature requests to C<bug-www-yandex-pdd at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=WWW-Yandex-PDD>.  I will be notified, and then you'll
+the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=WWW-Yandex-PDD>. I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
+
+=head1 HISTORY
+
+Original version by dctabuyz: L<https://github.com/dctabuyz/Yandex-API-PDD.perl>
 
 
 =head1 SUPPORT
@@ -607,8 +610,8 @@ L<http://search.cpan.org/dist/WWW-Yandex-PDD/>
 
 =head1 COPYRIGHT AND LICENSE
 
-    Copyright (c) 2010 by dctabuyz@ya.ru
-    Copyright (c) 2013 by aluck@cpan.org
+    Copyright (c) 2010 by C<< <dctabuyz at ya.ru> >>
+    Copyright (c) 2013 by C<< <aluck at cpan.org> >>
 
     This library is free software; you can redistribute it and/or modify
     it under the same terms as Perl itself, either Perl version 5.8.7 or,

@@ -7,6 +7,7 @@ use base "Exporter";
 
 use constant HTTP_ERROR          => 'HTTP_ERROR';
 
+# FIXME:  NOT_AUTHORIZED      = 'NOT_AUTHORIZED' ???
 use constant NOT_AUTHENTICATED   => 'NOT_AUTHENTICATED';
 use constant INVALID_RESPONSE    => 'INVALID_RESPONSE';
 use constant REQUEST_FAILED      => 'REQUEST_FAILED';
@@ -30,8 +31,6 @@ use constant SERVICE_ERROR       => 'SERVICE_ERROR';
 use constant UNKNOWN_ERROR       => 'UNKNOWN_ERROR';
 
 my @ERR = qw(   
-		HTTP_ERROR
-
 		NOT_AUTHENTICATED
 		INVALID_RESPONSE
 		REQUEST_FAILED
@@ -58,6 +57,7 @@ my @ERR = qw(
 
 my %ERR_R = (   
 		'not authenticated'           => NOT_AUTHENTICATED,
+		'not_authorized'              => NOT_AUTHENTICATED,
 		'no_login'                    => INVALID_LOGIN,
 		'bad_login'                   => INVALID_LOGIN,
 		'no_user'                     => USER_NOT_FOUND,
@@ -77,7 +77,7 @@ my %ERR_R = (
 
 		'no_import_settings'          => NO_IMPORT_SETTINGS,
 		'no import info on this user' => USER_NOT_FOUND,
-                'unknown'                     => REQUEST_FAILED,
+      	'unknown'                     => REQUEST_FAILED,
 );
 
 # our @EXPORT_OK   = ( 'identify', @ERR );
