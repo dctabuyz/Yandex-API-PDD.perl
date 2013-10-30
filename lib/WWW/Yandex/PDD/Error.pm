@@ -5,30 +5,30 @@ use warnings;
 
 use base "Exporter";
 
-use constant HTTP_ERROR          => 'HTTP_ERROR';
+use constant {
+	HTTP_ERROR          => 'HTTP_ERROR',
 
-# FIXME:  NOT_AUTHORIZED      = 'NOT_AUTHORIZED' ???
-use constant NOT_AUTHENTICATED   => 'NOT_AUTHENTICATED';
-use constant INVALID_RESPONSE    => 'INVALID_RESPONSE';
-use constant REQUEST_FAILED      => 'REQUEST_FAILED';
+	NOT_AUTHENTICATED   => 'NOT_AUTHENTICATED',
+	INVALID_RESPONSE    => 'INVALID_RESPONSE',
+	REQUEST_FAILED      => 'REQUEST_FAILED',
 
-use constant USER_NOT_FOUND      => 'USER_NOT_FOUND';
-use constant LOGIN_OCCUPIED      => 'LOGIN_OCCUPIED';
-use constant LOGIN_TOO_SHORT     => 'LOGIN_TOO_SHORT';
-use constant LOGIN_TOO_LONG      => 'LOGIN_TOO_LONG';
-use constant INVALID_LOGIN       => 'INVALID_LOGIN';
+	USER_NOT_FOUND      => 'USER_NOT_FOUND',
+	LOGIN_OCCUPIED      => 'LOGIN_OCCUPIED',
+	LOGIN_TOO_SHORT     => 'LOGIN_TOO_SHORT',
+	LOGIN_TOO_LONG      => 'LOGIN_TOO_LONG',
+	INVALID_LOGIN       => 'INVALID_LOGIN',
 
-use constant INVALID_PASSWORD    => 'INVALID_PASSWORD';
-use constant PASSWORD_TOO_SHORT  => 'PASSWORD_TOO_SHORT';
-use constant PASSWORD_TOO_LONG   => 'PASSWORD_TOO_LONG';
+	INVALID_PASSWORD    => 'INVALID_PASSWORD',
+	PASSWORD_TOO_SHORT  => 'PASSWORD_TOO_SHORT',
+	PASSWORD_TOO_LONG   => 'PASSWORD_TOO_LONG',
 
-use constant CANT_CREATE_ACCOUNT => 'CANT_CREATE_ACCOUNT';
-use constant USER_LIMIT_EXCEEDED => 'USER_LIMIT_EXCEEDED';
+	CANT_CREATE_ACCOUNT => 'CANT_CREATE_ACCOUNT',
+	USER_LIMIT_EXCEEDED => 'USER_LIMIT_EXCEEDED',
 
-use constant NO_IMPORT_SETTINGS  => 'NO_IMPORT_SETTINGS';
-
-use constant SERVICE_ERROR       => 'SERVICE_ERROR';
-use constant UNKNOWN_ERROR       => 'UNKNOWN_ERROR';
+	NO_IMPORT_SETTINGS  => 'NO_IMPORT_SETTINGS',
+	SERVICE_ERROR       => 'SERVICE_ERROR',
+	UNKNOWN_ERROR       => 'UNKNOWN_ERROR',
+};
 
 my @ERR = qw(   
 		NOT_AUTHENTICATED
@@ -53,7 +53,6 @@ my @ERR = qw(
 		SERVICE_ERROR
 		UNKNOWN_ERROR
 );
-
 
 my %ERR_R = (   
 		'not authenticated'           => NOT_AUTHENTICATED,
@@ -81,13 +80,36 @@ my %ERR_R = (
 );
 
 # our @EXPORT_OK   = ( 'identify', @ERR );
-our @EXPORT_OK   = ( @ERR );
 #our %EXPORT_TAGS = ( errors => [ @ERR ] , all => [ @EXPORT_OK ] );
+our @EXPORT_OK   = ( @ERR );
 our %EXPORT_TAGS = ( errors => [ @ERR ] );
 
 sub identify
 {
 	return $ERR_R{ [split(/,/, $_[0], 2)] -> [0] } || &REQUEST_FAILED; 
 }
+
+=encoding utf8
+
+=head1 NAME
+
+WWW::Yandex::PDD::Error - error messages handling for L<WWW::Yandex::PDD>
+
+
+=head1 SYNOPSIS
+
+Normally there is no need to mess with this package.
+
+Unfortunately, Yandex API does not provide any description of error messages or even a list of possible messages. Please contact me at L<< <aluck@cpan.org> >> if you happen to stumble upon any messages that are not handled here.
+
+
+=head1 METHODS
+
+=head2 identify
+	my $error = WWW::Yandex::PDD::identify($error_message)
+
+	Takes Yandex error message, returns its type.
+
+=cut
 
 1;
